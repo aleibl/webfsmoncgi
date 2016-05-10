@@ -1,0 +1,92 @@
+#!/usr/bin/perl -w
+
+use strict;
+use warnings;
+use Math::Round;
+
+my $js =<<END;
+function refresh_me() {
+
+}
+END
+
+my $css =<<END;
+.alarm {
+  background-color: red;
+}
+.pct00 {
+  background-color: white;
+}
+_GENERATED_CODE_HERE_
+END
+
+my $pct;
+my $gen_css = "";
+my $pct_left;
+for ($pct = 100; $pct > 84; $pct--) {
+  $pct_left = 100 - $pct;
+  $gen_css .= ".pct$pct {\n";
+  $gen_css .= sprintf("  background-color: #%02x%02x%02x;\n  color: white;\n", round(2.55 * $pct_left * 6), 0, 0);
+  $gen_css .= "}\n"
+}
+$css =~ s/_GENERATED_CODE_HERE_/$gen_css/g;
+
+sub _fs_table_line {
+  my $ipcent     = shift;
+  my $pcent      = shift;
+  my $mountpoint = shift;
+  return "<tr><td>$mountpoint</td><td class='pct" . $pcent . "'>$pcent</td><td class='pct" . $ipcent . "'>$ipcent</td></tr>\n";
+}
+
+my $title = "Filesystem Monitor";
+my $response = "";
+my ($ipcent, $pcent, $mountpoint);
+
+# open(CMD, 'df -l -x tmpfs -x devtmpfs --output="target,ipcent,pcent" | ') or die "bugger!";;
+# or for OS X :-( :
+open(CMD, 'df -l -i | awk \'{print $8 "   " $5 "   " $9}\' | ') or die "bugger!";;
+my $line;
+my $raw;
+$response .= "<tr><th align='left'>Mountpoint</th><th align='left'>%used</th><th align='left'>%inodes used</th></tr>\n";
+<CMD>;   # discard first line (header)
+while ($line = <CMD>) {
+  $raw .= $line;
+  chomp $line;
+  ($ipcent, $pcent, $mountpoint) = split(/\s+/, $line);
+  $ipcent =~ s/%$//g;
+  $pcent =~ s/%$//g;
+  #$response .= "<tr><td>$mountpoint</td><td class='pct" . $pcent . "'>$pcent</td><td class='pct" . $ipcent . "'>$ipcent</td></tr>\n";
+  $response .= _fs_table_line($ipcent, $pcent, $mountpoint);
+}
+
+my $i;
+my $dummy_pct;
+for ($i = 0; $i < 16; $i++) {
+  $dummy_pct = 100 - $i;
+#  $response .= "<tr><td>DUMMY $dummy_pct</td><td>$dummy_pct</td><td class='pct" . $dummy_pct . "'>$dummy_pct</td></tr>\n";
+  $response .= _fs_table_line($dummy_pct, $dummy_pct, "DUMMY $dummy_pct");
+}
+
+=for example
+root@openxpki:~# df -l -x tmpfs -x devtmpfs --output
+Filesystem                    Type Inodes IUsed  IFree IUse% 1K-blocks    Used   Avail Use% Mounted on
+/dev/mapper/openxpki--vg-root ext4 375360 72618 302742   20%   5779392 1624748 3838024  30% /
+/dev/sda1                     ext2  62248   301  61947    1%    240972   36904  191627  17% /boot
+root@openxpki:~# 
+=cut
+
+
+
+
+
+# printing the response
+# header
+print "<html>\n<head>\n<title>$title</title>\n";
+print "<script>\n$js\n</script>\n";
+print "<style>\n$css\n</style>\n";
+print "</head>\n<body>\n";
+print "<h1>$title</h1>\n";
+print "<table>\n$response\n</table>";
+print "<pre>\n$raw\n</pre>\n";
+print "</body>\n</html>\n";
+
