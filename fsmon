@@ -26,7 +26,8 @@ my $pct_left;
 for ($pct = 100; $pct > 84; $pct--) {
   $pct_left = 100 - $pct;
   $gen_css .= ".pct$pct {\n";
-  $gen_css .= sprintf("  background-color: #%02x%02x%02x;\n  color: white;\n", round(2.55 * $pct_left * 6), 0, 0);
+  #$gen_css .= sprintf("  background-color: #%02x%02x%02x;\n  color: white;\n", round(2.55 * $pct_left * 6), 0, 0);
+  $gen_css .= sprintf("  background-color: #%02x%02x%02x;\n  color: white;\n", 255, round(2.55 * $pct_left * 4), 0);
   $gen_css .= "}\n"
 }
 $css =~ s/_GENERATED_CODE_HERE_/$gen_css/g;
